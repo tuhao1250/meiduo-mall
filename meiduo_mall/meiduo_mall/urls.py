@@ -18,5 +18,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('users.urls', namespace="users")),  # 包含用户模块url
     path('', include('verifications.urls', namespace="verifications")),
 ]

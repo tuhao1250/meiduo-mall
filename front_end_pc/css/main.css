@@ -704,12 +704,12 @@ html,body{height:100%}
 }
 .reg_form .get_msg_code{
 	float: left;
-	width:108px;
+	width:288px;
 	height:38px;
 	text-align:center;
 	line-height:38px;
 	border:1px solid #e0e0e0;
-	margin-left:10px;
+	/*margin-left:10px;*/
 	color:#333;
 }
 .reg_form .get_msg_code:hover{
