@@ -9,8 +9,7 @@ import random
 from meiduo_mall.libs.captcha.captcha import captcha
 from . import constants
 from . import serializers
-from meiduo_mall.libs.yuntongxun.sms import CCP
-
+from celery_tasks.sms.tasks import send_sms_code
 # Create your views here.
 
 
@@ -40,6 +39,7 @@ class SMSCodeView(GenericAPIView):
     # 视图使用的序列化器
     serializer_class = serializers.CheckImageCodeSerializer
 
+    # GET /sms_codes/<mobile:mobile>/
     def get(self, request, mobile):
         """
         获取短信验证码
@@ -68,9 +68,11 @@ class SMSCodeView(GenericAPIView):
         # 使用管道执行命令
         pl.execute()
         # 发送短信
-        ccp = CCP()
-        time = str(constants.SMS_CODE_REDIS_EXPIRES / 60)
-        ccp.send_template_sms(mobile, [sms_code, time], constants.SMS_CODE_TEMP_ID)
+        # ccp = CCP()
+        # time = str(constants.SMS_CODE_REDIS_EXPIRES / 60)
+        # ccp.send_template_sms(mobile, [sms_code, time], constants.SMS_CODE_TEMP_ID)
+        # 使用celery发送异步任务
+        send_sms_code.delay(mobile, sms_code)
 
         # 返回
         return Response({'message': 'OK'})
