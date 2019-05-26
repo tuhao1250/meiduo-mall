@@ -1,15 +1,15 @@
-from django.shortcuts import render
 from django.http.response import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from django_redis import get_redis_connection
 import random
-
+from rest_framework import status
 from meiduo_mall.libs.captcha.captcha import captcha
 from . import constants
 from . import serializers
 from celery_tasks.sms.tasks import send_sms_code
+from users.models import User
 # Create your views here.
 
 
@@ -74,5 +74,39 @@ class SMSCodeView(GenericAPIView):
         # 使用celery发送异步任务
         send_sms_code.delay(mobile, sms_code)
 
+        # 返回
+        return Response({'message': 'OK'})
+
+
+class SMSCodeByTokenView(APIView):
+    """根据access_token发送短信"""
+    def get(self, requset):
+        # 获取并校验access_token
+        access_token = requset.query_params.get('access_token')
+        if not access_token:
+            return Response({"message": "缺少access_token"}, status=status.HTTP_400_BAD_REQUEST)
+        # 从token中获取手机号
+        mobile = User.check_send_sms_code_token(access_token)
+        # 判断手机号发送的次数
+        if not mobile:
+            return Response({"message": "无效的access_token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 判断短信发送次数
+        redis_conn = get_redis_connection('verify_codes')
+        send_flag = redis_conn.get('send_flag_%s' % mobile)
+        if send_flag:
+            return Response({'message': '发送短信次数过于频繁'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        # 生成短信验证码
+        sms_code = '%06d' % random.randint(0, 999999)  # 生成随机六位数
+        # 发送短信验证码
+        # 创建redis管道
+        pl = redis_conn.pipeline()
+        # 使用管道接收命令
+        pl.setex('sms_%s' % mobile, constants.SMS_CODE_REDIS_EXPIRES, sms_code)
+        pl.setex('send_flag_%s' % mobile, constants.SEND_SMS_CODE_INTERVAL, 1)
+        # 使用管道执行命令
+        pl.execute()
+        # 使用celery发送异步任务
+        send_sms_code.delay(mobile, sms_code)
         # 返回
         return Response({'message': 'OK'})

@@ -1,6 +1,6 @@
 class UsernameConverter(object):
     """用户名转换器"""
-    regex = '\w{5,20}'
+    regex = r'\w{5,20}'
 
     def to_python(self, value):
         """从url中匹配结果转换成python变量"""

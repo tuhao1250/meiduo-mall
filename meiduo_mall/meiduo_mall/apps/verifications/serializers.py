@@ -34,18 +34,19 @@ class CheckImageCodeSerializer(serializers.Serializer):
             # 但是这里只是为了防止重复验证验证码,不应该返回服务器错误,所以这里需要处理掉,写入日志即可
             logger.error(result)
 
-
         # 对比
         real_image_code = real_image_code.decode()  # 转换为字符串
         if real_image_code.lower() != text.lower():
             raise serializers.ValidationError("验证码输入错误")
 
         # 判断用户在60s内是否请求过短信验证码
-        mobile = self.context['view'].kwargs['mobile']  # 从当前序列化器对象的context属性中获取手机号
-        # 根据手机号,查询redis数据库判断用户是否在60s内请求过短信验证码
-        send_flag = redis_conn.get("send_flag_%s" % mobile)
-        if send_flag:
-            # 如果有发送过,则校验失败
-            raise serializers.ValidationError("发送短信次数过于频繁")
+        # 如果前端传递过来的还有手机号,则验证手机号是否在60s内请求过验证码,否则只校验验证码即可
+        mobile = self.context['view'].kwargs.get('mobile')  # 从当前序列化器对象的context属性中获取手机号
+        if mobile:
+            # 根据手机号,查询redis数据库判断用户是否在60s内请求过短信验证码
+            send_flag = redis_conn.get("send_flag_%s" % mobile)
+            if send_flag:
+                # 如果有发送过,则校验失败
+                raise serializers.ValidationError("发送短信次数过于频繁")
         # 全部校验通过需要返回attrs
         return attrs
