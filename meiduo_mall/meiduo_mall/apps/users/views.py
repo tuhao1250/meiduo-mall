@@ -1,13 +1,14 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from rest_framework.generics import CreateAPIView, GenericAPIView
+from rest_framework.generics import CreateAPIView, GenericAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import mixins
 import re
+from rest_framework.permissions import IsAuthenticated
 
 from .models import User
-from .serializers import CreateUserSerializer, CheckSMSCodeSerializer, ResetPasswordSerializer
+from .serializers import CreateUserSerializer, CheckSMSCodeSerializer, ResetPasswordSerializer, UserDatailSerializer
 from verifications.serializers import CheckImageCodeSerializer
 from .utils import get_user_by_account
 # Create your views here.
@@ -127,6 +128,23 @@ class PasswordView(GenericAPIView):
         serializer.save()
         return Response(serializer.data)
 
+
+class UserDetailView(RetrieveAPIView):
+    """用户详情视图"""
+    queryset = User.objects.all()
+    serializer_class = UserDatailSerializer
+    # 补充只有通过认证才能访问接口的权限
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        """
+        返回请求的用户对象
+        :return:
+        """
+        # 在类视图对象中也保存了请求对象request
+        # request对象的user属性,是通过认证检验之后的请求用户对象
+        # 在类视图中除了存在request对象,还存在了kwargs属性
+        return self.request.user
 
 
 
