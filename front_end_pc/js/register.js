@@ -22,10 +22,10 @@ var vm = new Vue({
         sms_code_tip: '获取短信验证码',
         sending_flag: false,  // 是否发送过短信验证码
 
-        err_image_code_message: '请填写图片验证码',  // 图片验证码错误信息
-        err_sms_code_message: '请填写短信验证码',  // 短信验证码错误信息
-        err_username_message: '请输入5-20个字符的用户名',  // 用户名错误信息
-        err_mobile_message: '您输入的手机号码格式不正确',  // 手机号码错误信息
+        error_image_code_message: '请填写图片验证码',  // 图片验证码错误信息
+        error_sms_code_message: '请填写短信验证码',  // 短信验证码错误信息
+        error_username_message: '请输入5-20个字符的用户名',  // 用户名错误信息
+        error_mobile_message: '您输入的手机号码格式不正确',  // 手机号码错误信息
     },
     mounted: function () {
         this.get_image_code();
@@ -82,7 +82,7 @@ var vm = new Vue({
                 })
                 .catch(error => {
                     if (error.response.status === 400) {
-                        this.err_image_code_message = "图片验证码有误";
+                        this.error_image_code_message = "图片验证码有误";
                         this.error_image_code = true;
                         this.get_image_code();  // 重新获取图片验证码
                     } else {
@@ -95,7 +95,7 @@ var vm = new Vue({
         check_username: function () {
             var len = this.username.length;
             if (len < 5 || len > 20) {
-                this.err_username_message = '请输入5-20个字符的用户名';
+                this.error_username_message = '请输入5-20个字符的用户名';
                 this.error_name = true;
             } else {
                 this.error_name = false;
@@ -106,7 +106,7 @@ var vm = new Vue({
                 })
                     .then(response => {
                         if (response.data.count > 0) {
-                            this.err_username_message = "用户名已存在!";
+                            this.error_username_message = "用户名已存在!";
                             this.error_name = true;
                         } else {
                             this.error_name = false;
@@ -130,7 +130,7 @@ var vm = new Vue({
                 this.error_mobile = false;
             } else {
                 this.error_mobile = true;
-                this.err_mobile_message = "您输入的手机号码格式不正确";
+                this.error_mobile_message = "您输入的手机号码格式不正确";
             }
             if (!this.error_mobile) {
                 axios.get(host + "mobiles/" + this.mobile + "/count/", {
@@ -138,7 +138,7 @@ var vm = new Vue({
                 })
                     .then(response => {
                         if (response.data.count > 0) {
-                            this.err_mobile_message = '手机号已存在';
+                            this.error_mobile_message = '手机号已存在';
                             this.error_mobile = true;
                         } else {
                             this.error_mobile = false;
@@ -152,7 +152,7 @@ var vm = new Vue({
         check_image_code: function () {
             if (!this.image_code) {
                 this.error_image_code = true;
-                this.err_image_code_message = "请填写图片验证码";
+                this.error_image_code_message = "请填写图片验证码";
             } else {
                 this.error_image_code = false;
             }
@@ -160,7 +160,7 @@ var vm = new Vue({
         check_sms_code: function () {
             if (!this.sms_code) {
                 this.error_sms_code = true;
-                this.err_sms_code_message = "请填写短信验证码";
+                this.error_sms_code_message = "请填写短信验证码";
 
             } else {
                 this.error_sms_code = false;
@@ -206,9 +206,9 @@ var vm = new Vue({
                         this.get_image_code();
                         if (error.response.status === 400) {
                             if ('non_field_errors' in error.response.data) {
-                                this.err_sms_code_message = error.response.data.non_field_errors[0];
+                                this.error_sms_code_message = error.response.data.non_field_errors[0];
                             } else {
-                                this.err_sms_code_message = '数据有误';
+                                this.error_sms_code_message = '数据有误';
                             }
                             this.error_sms_code = true;
                         } else {

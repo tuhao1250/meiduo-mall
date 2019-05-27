@@ -3,10 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView, GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import mixins
 import re
 
 from .models import User
-from .serializers import CreateUserSerializer, CheckSMSCodeSerializer
+from .serializers import CreateUserSerializer, CheckSMSCodeSerializer, ResetPasswordSerializer
 from verifications.serializers import CheckImageCodeSerializer
 from .utils import get_user_by_account
 # Create your views here.
@@ -106,8 +107,25 @@ class PasswordTokenView(GenericAPIView):
         return Response({'user_id': user.id, 'access_token': access_token})
 
 
+class PasswordView(GenericAPIView):
+    """用户密码视图"""
 
+    serializer_class = ResetPasswordSerializer
+    queryset = User.objects.all()
 
+    def post(self, request, pk):
+        """
+        重置密码方法
+        :param request:
+        :param pk: user对象的主键
+        :return:
+        """
+        instance = self.get_object()
+        # 获取序列化器
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 

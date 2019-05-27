@@ -18,6 +18,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('users.urls', namespace="users")),  # 包含用户模块url
-    path('', include('verifications.urls', namespace="verifications")),
+    path('oauth/', include('oauth.urls', namespace="oauth")),  # 包含oauth模块的urls
+    path('', include('users.urls', namespace="users")),  # 包含用户模块urls
+    path('', include('verifications.urls', namespace="verifications")),  # 包含验证码模块的urls
 ]

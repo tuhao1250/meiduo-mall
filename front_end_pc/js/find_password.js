@@ -28,6 +28,8 @@ var vm = new Vue({
         error_image_code_message: '请填写验证码',
         error_username_message: '请填写用户名或手机号',
         error_sms_code_message: '请填写短信验证码',
+        error_pwd_message: '仅允许8~20个字符的密码',
+        error_check_pwd_message: '两次输入的密码不一致',
         sms_code_tip: '获取短信验证码',
 
         // 控制进度条显示
@@ -83,10 +85,22 @@ var vm = new Vue({
         },
         check_pwd: function () {
             var len = this.password.length;
-            this.error_password = (len < 5 || len > 20);
+            if(len<8 || len>20){
+                this.error_pwd_message = "仅允许8~20个字符的密码";
+                this.error_password = true;
+            }
+            else {
+                this.error_password = false;
+            }
         },
         check_cpwd: function () {
-            this.error_check_password = !(this.password2 === this.password2)
+            if(this.password === this.password2){
+                this.error_check_password = false;
+            }
+            else {
+                this.error_check_password = true;
+                this.error_check_pwd_message = "两次输入的密码不一致"
+            }
         },
         generate_image_code: function () {
             this.image_code_id = this.generate_uuid();
@@ -186,7 +200,37 @@ var vm = new Vue({
             }
         },
         form_3_on_submit: function () {
-
+            this.check_pwd();
+            this.check_cpwd();
+            if(!this.error_password && !this.error_check_password){
+                axios.post(this.host + 'users/' + this.user_id + '/password/',{
+                    'password': this.password,
+                    'password2': this.password2,
+                    'access_token': this.access_token,
+                }, {
+                    responseType: 'json',
+                })
+                    .then(response=>{
+                        this.step_class['step-4'] = true;
+                        this.step_class['step-3'] = false;
+                        this.is_show_form_3 = false;
+                        this.is_show_form_4 = true;
+                        // location.href = '/login.html'
+                        // alert('密码修改成功,请重新登陆!')
+                    })
+                    .catch(error=>{
+                        if(error.data.status === 400){
+                            if("non_field_errors" in error.response.data){
+                                this.error_pwd_message = error.response.data.non_field_errors[0];
+                            }
+                            else {
+                                this.error_pwd_message = '数据有误';
+                            }
+                            this.error_password = true;
+                        }
+                        console.log(error.response.data);
+                    })
+            }
         },
 
     },
