@@ -704,6 +704,16 @@ html,body{height:100%}
 }
 .reg_form .get_msg_code{
 	float: left;
+	width: 108px;
+	height:38px;
+	text-align:center;
+	line-height:38px;
+	border:1px solid #e0e0e0;
+	margin-left:10px;
+	color:#333;
+}
+.reg_form .get_msg_code2{
+	float: left;
 	width:288px;
 	height:38px;
 	text-align:center;
@@ -713,6 +723,9 @@ html,body{height:100%}
 	color:#333;
 }
 .reg_form .get_msg_code:hover{
+	color:#f80000;
+}
+.reg_form .get_msg_code2:hover{
 	color:#f80000;
 }
 .reg_form .pic_code{
@@ -1425,6 +1438,9 @@ html,body{height:100%}
 	margin-left:8px;
 	background:#fff;
 	color:#333;
+}
+.form_step .form_group .phone_code:hover{
+	color: #f80000;
 }
 
 .pass_change_finish{

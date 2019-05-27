@@ -66,7 +66,7 @@ var vm = new Vue({
                         location.href = return_url;
                     })
                     .catch(error=>{
-                        if (error.response.status == 400) {
+                        if (error.response.status === 400) {
                             this.error_pwd_message = '用户名或密码错误';
                         } else {
                             this.error_pwd_message = '服务器错误';
@@ -74,6 +74,18 @@ var vm = new Vue({
                         this.error_pwd = true;
                     })
             }
+        },
+        qq_login: function () {
+            var next = this.get_query_string('next') || '/';
+            axios.get(this.host + "oauth/qq/authorization/?next=" + next, {
+                responseType: 'json'
+            })
+                .then(response => {
+                    location.href = response.data.oauth_url;
+                })
+                .catch(error => {
+                    console.log(error.response.data);
+                })
         }
     },
 })

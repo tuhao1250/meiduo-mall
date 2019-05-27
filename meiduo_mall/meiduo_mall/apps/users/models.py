@@ -51,7 +51,21 @@ class User(AbstractUser):
         """生成修改密码的token"""
         serializer = TJWSSerializer(settings.SECRET_KEY, expires_in=constants.SET_PASSWORD_TOKEN_EXPIRES)
         data = {
-            'user_id': self.pk
+            'user_id': self.id
         }
         token = serializer.dumps(data)
         return token.decode()
+
+    @staticmethod
+    def check_set_password_token(token, user_id):
+        """检验设置密码的token"""
+        serializer = TJWSSerializer(settings.SECRET_KEY, expires_in=constants.SET_PASSWORD_TOKEN_EXPIRES)
+        try:
+            data = serializer.loads(token)
+            print(data)
+        except BadData:
+            return False
+        else:
+            return user_id == data.get('user_id')
+
+

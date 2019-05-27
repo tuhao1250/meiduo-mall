@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',  # cors跨域
     'users.apps.UsersConfig',  # 用户模块
     'verifications.apps.VerificationsConfig',  # 图片验证码模块
+    'oauth.apps.OauthConfig',  # 第三方认证模块
 ]
 
 MIDDLEWARE = [
@@ -237,3 +238,9 @@ CORS_ORIGIN_WHITELIST = (
     "http://www.meiduo.site:8080",
     "http://api.meiduo.site:8000",
 )
+
+# 用于QQ登录的配置信息
+QQ_APP_ID = '101474184'
+QQ_APP_KEY = 'c6ce949e04e12ecc909ae6a8b09b637c'
+QQ_REDIRECT_URI = 'http://www.meiduo.site:8080/oauth_callback.html'
+QQ_STATE = "/"
