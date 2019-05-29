@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from rest_framework_jwt.settings import api_settings
 from django_redis import get_redis_connection
+import re
+from celery_tasks.emails.tasks import send_verify_mail
 from .models import User
 from .utils import get_user_by_account
-import re
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -87,7 +88,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         token = jwt_encode_handler(payload)
         user.token = token  # 动态为user对象添加属性
         # print(user.token)
-        print('\n'.join(['%s:%s' % item for item in user.__dict__.items()]))
+        # print('\n'.join(['%s:%s' % item for item in user.__dict__.items()]))
         return user
 
 
@@ -163,6 +164,35 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
 class UserDatailSerializer(serializers.ModelSerializer):
     """用户个人信息序列化器"""
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'mobile', 'email', 'email_active',]
+        fields = ['id', 'username', 'mobile', 'email', 'email_active']
+
+
+class EmailSerializer(serializers.ModelSerializer):
+    """用户邮箱序列化器"""
+
+    class Meta:
+        model = User
+        fields = ['id', 'email']
+        extra_kwargs = {
+            'emial': {
+                'required': True,
+            }
+        }
+
+    def validate_email(self, value):
+        if not re.match(r'^[a-z0-9][\w.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', value):
+            raise serializers.ValidationError("无效的邮箱地址")
+        return value
+
+    def update(self, instance, validated_data):
+        """重写更新方法,保存邮箱,发送激活链接"""
+        email = validated_data['email']
+        instance.email = email
+        instance.save()
+        # 发送激活链接
+        url = instance.generate_verify_email_url()
+        send_verify_mail.delay(instance.username, email, url)
+        return instance

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from rest_framework.generics import CreateAPIView, GenericAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView, GenericAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import mixins
@@ -8,7 +8,8 @@ import re
 from rest_framework.permissions import IsAuthenticated
 
 from .models import User
-from .serializers import CreateUserSerializer, CheckSMSCodeSerializer, ResetPasswordSerializer, UserDatailSerializer
+from .serializers import CreateUserSerializer, CheckSMSCodeSerializer, ResetPasswordSerializer, \
+    UserDatailSerializer, EmailSerializer
 from verifications.serializers import CheckImageCodeSerializer
 from .utils import get_user_by_account
 # Create your views here.
@@ -147,9 +148,33 @@ class UserDetailView(RetrieveAPIView):
         return self.request.user
 
 
+class EmailView(UpdateAPIView):
+    """
+    保存邮箱
+    """
+    serializer_class = EmailSerializer
+    queryset = User.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    # def get_serializer(self, *args, **kwargs):
+    #     return EmailSerializer(self.request.user, data=self.request.data)
 
 
+class EmailVerifyView(APIView):
+    """激活邮箱"""
 
+    def get(self, request):
+        token = request.query_params.get('token')
+        if not token:
+            return Response({'message': '缺少token'}, status=status.HTTP_400_BAD_REQUEST)
+        # 检验token,并激活链接
+        result = User.check_verify_email_token(token)
+        if not result:
+            return Response({'message': '无效的激活链接'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'OK'})
 
 
 

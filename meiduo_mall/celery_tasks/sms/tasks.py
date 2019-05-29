@@ -7,7 +7,7 @@ from celery_tasks.main import celery_app
 logger = logging.getLogger("django")
 
 
-@celery_app.task()  # 如果不传name,默认是celery_tasks.sms.tasks.send_sms_code
+@celery_app.task(name="send_sms_code")  # 如果不传name,默认是celery_tasks.sms.tasks.send_sms_code
 def send_sms_code(mobile, sms_code):
     """
     发送短信验证码任务
