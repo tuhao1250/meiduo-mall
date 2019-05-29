@@ -21,4 +21,5 @@ urlpatterns = [
     path('oauth/', include('oauth.urls', namespace="oauth")),  # 包含oauth模块的urls
     path('', include('users.urls', namespace="users")),  # 包含用户模块urls
     path('', include('verifications.urls', namespace="verifications")),  # 包含验证码模块的urls
+    path('', include('areas.urls', namespace="areas")),  # 包含areas模块的urls
 ]

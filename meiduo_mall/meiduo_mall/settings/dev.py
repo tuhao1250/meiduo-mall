@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',  # 用户模块
     'verifications.apps.VerificationsConfig',  # 图片验证码模块
     'oauth.apps.OauthConfig',  # 第三方认证模块
+    'areas.apps.AreasConfig',  # 行政区划
 ]
 
 MIDDLEWARE = [
@@ -218,6 +219,14 @@ REST_FRAMEWORK = {
     ),
 }
 
+# DRF扩展
+REST_FRAMEWORK_EXTENSIONS = {
+    # 缓存时间
+    'DEFAULT_CACHE_RESPONSE_TIMEOUT': 60 * 60,
+    # 缓存存储
+    'DEFAULT_USE_CACHE': 'default',
+}
+
 JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),  # 指定token的有效期为一天
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler',  # 配置注册时返回值包含用户名和用户id
@@ -244,3 +253,14 @@ QQ_APP_ID = '101474184'
 QQ_APP_KEY = 'c6ce949e04e12ecc909ae6a8b09b637c'
 QQ_REDIRECT_URI = 'http://www.meiduo.site:8080/oauth_callback.html'
 QQ_STATE = "/"
+
+# django发送邮件配置
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.163.com'
+EMAIL_PORT = 25
+# 发送邮件的邮箱
+EMAIL_HOST_USER = 'suptest005@163.com'
+# 在邮箱中设置的客户端授权密码
+EMAIL_HOST_PASSWORD = 'th19940713'
+# 收件人看到的发件人
+EMAIL_FROM = '美多商城<suptest005@163.com>'
