@@ -16,6 +16,7 @@ import datetime
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 也就是meiduo-mall/meiduo_mall/meiduo_mall这个目录了
 
 # sys.path保存python解释器导包的路径
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
@@ -44,10 +45,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',  # cors跨域
+    'ckeditor',  # 富文本编辑器
+    'ckeditor_uploader',  # 富文本编辑器上传图片模块
+    'django_crontab',  # 定时任务
     'users.apps.UsersConfig',  # 用户模块
     'verifications.apps.VerificationsConfig',  # 图片验证码模块
     'oauth.apps.OauthConfig',  # 第三方认证模块
     'areas.apps.AreasConfig',  # 行政区划
+    'goods.apps.GoodsConfig',  # 商品模块
+    'contents.apps.ContentsConfig',  # 广告模块
 ]
 
 MIDDLEWARE = [
@@ -66,7 +72,7 @@ ROOT_URLCONF = 'meiduo_mall.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -264,3 +270,31 @@ EMAIL_HOST_USER = 'suptest005@163.com'
 EMAIL_HOST_PASSWORD = 'th19940713'
 # 收件人看到的发件人
 EMAIL_FROM = '美多商城<suptest005@163.com>'
+
+# 配置django使用fastdfs文件存储系统
+DEFAULT_FILE_STORAGE = 'meiduo_mall.utils.fastdfs.fdfs_storage.FastDFSSTORAGE'
+
+# FASTDFS配置
+FDFS_CLIENT_CONF = os.path.join(BASE_DIR, 'utils/fastdfs/client.conf')
+FDFS_BASE_URL = 'http://192.168.1.110:8888/'
+
+# CKEDITOR设置
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',  # 工具条功能
+        'height': 300,  # 编辑器高度
+        # 'width': 300,  # 编辑器宽
+    },
+}
+CKEDITOR_UPLOAD_PATH = ''  # 上传图片保存路径，使用了FastDFS，所以此处设为''
+
+# 配置生成首页静态文件的目录
+GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc')
+
+# 定时任务
+CRONJOBS = [
+    ('*/5 * * * *', 'contents.crons.generate_static_index_file', '>> ' + os.path.join(os.path.dirname(BASE_DIR), 'logs/crontab.logs') )
+]
+
+# 解决crontab中文问题
+CRONTAB_COMMAND_PREFIX = 'LANG_ALL=zh_cn.UTF-8'

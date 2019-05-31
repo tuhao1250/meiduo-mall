@@ -3,8 +3,9 @@ from rest_framework_jwt.settings import api_settings
 from django_redis import get_redis_connection
 import re
 from celery_tasks.emails.tasks import send_verify_mail
-from .models import User
+from .models import User, Address
 from .utils import get_user_by_account
+from . import constants
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -40,7 +41,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     def validate_mobile(self, value):
         """校验手机号"""
-        if not re.match(r'((13[0-9])|(14[5,7])|(15[0-3,5-9])|(17[0,1,3,5-8])|(18[0-9])|166|198|199|(147))\d{8}', value):
+        if not re.match(constants.MOBILE_REGEX, value):
             raise serializers.ValidationError("手机格式错误")
         return value
 
@@ -183,7 +184,7 @@ class EmailSerializer(serializers.ModelSerializer):
         }
 
     def validate_email(self, value):
-        if not re.match(r'^[a-z0-9][\w.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', value):
+        if not re.match(constants.EMAIL_REGEX, value):
             raise serializers.ValidationError("无效的邮箱地址")
         return value
 
@@ -196,3 +197,39 @@ class EmailSerializer(serializers.ModelSerializer):
         url = instance.generate_verify_email_url()
         send_verify_mail.delay(instance.username, email, url)
         return instance
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    """用户收货地址序列化器"""
+    # 执行反序列化时接收的省市区是id,执行序列化时,需要同时返回id和name
+    province_id = serializers.IntegerField(label="省id", required=True)
+    city_id = serializers.IntegerField(label="市id", required=True)
+    district_id = serializers.IntegerField(label="区id", required=True)
+    province = serializers.StringRelatedField(label="省", read_only=True)
+    city = serializers.StringRelatedField(label="市", read_only=True)
+    district = serializers.StringRelatedField(label="区", read_only=True)
+
+    class Meta:
+        model = Address
+        exclude = ['user', 'is_delete', 'update_time', 'create_time']
+
+    def validate_mobile(self, value):
+        if not re.match(constants.MOBILE_REGEX, value):
+            raise serializers.ValidationError("手机号码格式不正确")
+        return value
+
+    def create(self, validated_data):
+        """创建地址"""
+        # print(validated_data)
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class AddressTitleSerializer(serializers.ModelSerializer):
+    """用户地址标题序列化器"""
+    # 地址标题默认是收货人,可以单独修改,因此需要单的的序列化器
+
+    class Meta:
+        model = Address
+        fields = ['title']
+
