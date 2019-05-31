@@ -78,7 +78,7 @@ class OAuthQQ(object):
         """
         # 获取url
         url = "https://graph.qq.com/oauth2.0/me?access_token=" + access_token
-        print(url)
+        # print(url)
         try:
             # 发送请求
             response = urlopen(url)

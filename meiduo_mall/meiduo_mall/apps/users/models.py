@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from itsdangerous import TimedJSONWebSignatureSerializer as TJWSSerializer
 from itsdangerous import BadData
 from django.conf import settings
+from meiduo_mall.utils.models import BaseModel
 from . import constants
 # Create your models here.
 
@@ -12,6 +13,8 @@ class User(AbstractUser):
 
     mobile = models.CharField(max_length=11, unique=True, verbose_name="手机号", help_text="手机号")
     email_active = models.BooleanField(default=False, verbose_name="邮箱验证状态", help_text="邮箱验证状态")
+    default_address = models.OneToOneField('Address', on_delete=models.SET_NULL, related_name="users", null=True, blank=True,
+                                           verbose_name="默认收货地址", help_text="默认收货地址")
 
     class Meta:
         db_table = 'tb_users'
@@ -63,7 +66,7 @@ class User(AbstractUser):
         serializer = TJWSSerializer(settings.SECRET_KEY, expires_in=constants.SET_PASSWORD_TOKEN_EXPIRES)
         try:
             data = serializer.loads(token)
-            print(data)
+            # print(data)
         except BadData:
             return False
         else:
@@ -101,4 +104,27 @@ class User(AbstractUser):
         return user
 
 
+class Address(BaseModel):
+    """用户地址模型类"""
+    user = models.ForeignKey('User', related_name='addresses', on_delete=models.CASCADE,
+                             verbose_name='关联用户', help_text='关联用户')
+    title = models.CharField(max_length=20, verbose_name='地址名称', help_text='地址名称')
+    receiver = models.CharField(max_length=20, verbose_name='收货人', help_text='收货人')
+    province = models.ForeignKey('areas.Area', on_delete=models.PROTECT, related_name='province_addresses',
+                                 verbose_name='省', help_text='省')
+    city = models.ForeignKey('areas.Area', on_delete=models.PROTECT, related_name='city_addresses',
+                             verbose_name='市', help_text='市')
+    district = models.ForeignKey('areas.Area', on_delete=models.PROTECT, related_name='district_addresses',
+                                 verbose_name='区', help_text='区')
+    place = models.CharField(max_length=50, verbose_name='详细地址', help_text='详细地址')
+    mobile = models.CharField(max_length=11, verbose_name='手机', help_text="手机")
+    tel = models.CharField(max_length=20, null=True, blank=True, default='', verbose_name='固定电话', help_text='固定电话')
+    email = models.CharField(max_length=30, null=True, blank=True, default='',
+                             verbose_name='电子邮箱', help_text='电子邮箱')
+    is_delete = models.BooleanField(default=False, verbose_name="逻辑删除")
 
+    class Meta:
+        db_table = 'tb_address'
+        verbose_name = '用户地址'
+        verbose_name_plural = verbose_name
+        ordering = ['-update_time']

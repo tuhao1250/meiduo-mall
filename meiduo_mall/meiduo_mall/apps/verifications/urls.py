@@ -1,8 +1,6 @@
 from django.urls import path
 from . import views
-from users.converters import MobileConverter
 
-# register_converter(MobileConverter, "mobile")
 
 app_name = "verifications"
 

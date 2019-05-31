@@ -22,4 +22,5 @@ urlpatterns = [
     path('', include('users.urls', namespace="users")),  # 包含用户模块urls
     path('', include('verifications.urls', namespace="verifications")),  # 包含验证码模块的urls
     path('', include('areas.urls', namespace="areas")),  # 包含areas模块的urls
+    path('ckeditor/', include('ckeditor_uploader.urls')),  # 包含ckeditor的url
 ]

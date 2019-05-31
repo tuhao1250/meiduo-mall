@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django_redis import get_redis_connection
 from users.models import User
 from .models import OAuthQQUser
+from users.constants import MOBILE_REGEX
 
 
 class OAuthQQUserSerializer(serializers.ModelSerializer):
@@ -12,7 +13,7 @@ class OAuthQQUserSerializer(serializers.ModelSerializer):
     access_token = serializers.CharField(label="操作凭证", help_text="操作凭证", write_only=True)
     token = serializers.CharField(label="登录token", help_text="登录token", read_only=True)
     mobile = serializers.RegexField(label="手机号", help_text="手机号",
-                    regex=r'((13[0-9])|(14[5,7])|(15[0-3,5-9])|(17[0,1,3,5-8])|(18[0-9])|166|198|199|(147))\d{8}')
+                    regex=MOBILE_REGEX)
 
     class Meta:
         model = User

@@ -48,7 +48,7 @@ var vm = new Vue({
                             // 勾选了记住登录
                             sessionStorage.clear();
                             localStorage.username = response.data.username;
-                            localStorage.useri_id = response.data.id;
+                            localStorage.user_id = response.data.id;
                             localStorage.token = response.data.token;
                         }
                         else{

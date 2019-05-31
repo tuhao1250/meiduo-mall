@@ -1,3 +1,6 @@
+from . import constants
+
+
 class UsernameConverter(object):
     """用户名转换器"""
     regex = r'\w{5,20}'
