@@ -12,55 +12,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='brand',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='goods',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='goodscategory',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='goodschannel',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='goodsspecification',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='sku',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='skuimage',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='skuspecification',
-            name='is_delete',
-        ),
-        migrations.RemoveField(
-            model_name='specificationoption',
-            name='is_delete',
-        ),
-        migrations.AddField(
-            model_name='goods',
-            name='desc_detail',
-            field=ckeditor_uploader.fields.RichTextUploadingField(default='', verbose_name='详细介绍'),
-        ),
-        migrations.AddField(
-            model_name='goods',
-            name='desc_pack',
-            field=ckeditor.fields.RichTextField(default='', verbose_name='包装信息'),
-        ),
-        migrations.AddField(
-            model_name='goods',
-            name='desc_service',
-            field=ckeditor_uploader.fields.RichTextUploadingField(default='', verbose_name='售后服务'),
-        ),
+
     ]

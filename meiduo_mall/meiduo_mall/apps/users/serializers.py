@@ -3,6 +3,7 @@ from rest_framework_jwt.settings import api_settings
 from django_redis import get_redis_connection
 import re
 from celery_tasks.emails.tasks import send_verify_mail
+from goods.models import SKU
 from .models import User, Address
 from .utils import get_user_by_account
 from . import constants
@@ -232,4 +233,41 @@ class AddressTitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = ['title']
+
+
+class AddUserHistorySerializer(serializers.Serializer):
+    """用户浏览记录序列化器"""
+
+    sku_id = serializers.IntegerField(min_value=0, label="商品sku编号", help_text="商品sku编号")
+
+    def validate_sku_id(self, value):
+        """检验sku_id是否合法"""
+        try:
+            sku = SKU.objects.get(id=value)
+        except SKU.DoesNotExist:
+            raise serializers.ValidationError("sku_id不存在")
+        return value
+
+    def create(self, validated_data):
+        """保存用户浏览历史记录"""
+        # 获取user_id,sku_id
+        user_id = self.context['request'].user.id
+        sku_id = validated_data['sku_id']
+
+        # 获取redis连接
+        conn = get_redis_connection('history')
+        # 创建redis管道
+        pl = conn.pipeline()
+        history_key = "history_%s" % user_id
+        # 去掉已经存在redis中的记录
+        # lrem(name, count, value)
+        pl.lrem(history_key, 0, sku_id)
+        # 从左侧插入本次浏览记录
+        # lpush(name, *values)
+        pl.lpush(history_key, sku_id)
+        # 截断,如果数量超过限制,截取指定区间的数据,丢弃其他数据
+        # ltrim(name, start, end)
+        pl.ltrim(history_key, 0, constants.USER_BROWSING_HISTORY_COUNTS_LIMIT - 1)
+        pl.execute()
+        return validated_data
 

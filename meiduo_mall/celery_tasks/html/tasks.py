@@ -114,9 +114,44 @@ def generate_static_sku_detail_html(sku_id):
         f.write(html_text)
 
 
+# 生成静态列表页
+@celery_app.task(name="genetate_static_list_html")
+def generate_static_list_html():
+    """
+    生成静态list页面
+    :return:
+    """
+    # 生成商品分类数据
+    categories = get_categories()
+    context = {
+        'categories': categories
+    }
+    # 加载模板
+    template = loader.get_template('list.html')
+    html_text = template.render(context)
+    file_path = os.path.join(settings.GENERATED_STATIC_HTML_FILES_DIR, 'list.html')
+    with open(file_path, "w") as f:
+        f.write(html_text)
 
 
-
+# 生成静态搜索页
+@celery_app.task(name="genetate_static_search_html")
+def generate_static_search_html():
+    """
+    生成静态search页面
+    :return:
+    """
+    # 生成商品分类数据
+    categories = get_categories()
+    context = {
+        'categories': categories
+    }
+    # 加载模板
+    template = loader.get_template('search.html')
+    html_text = template.render(context)
+    file_path = os.path.join(settings.GENERATED_STATIC_HTML_FILES_DIR, 'search.html')
+    with open(file_path, "w") as f:
+        f.write(html_text)
 
 
 

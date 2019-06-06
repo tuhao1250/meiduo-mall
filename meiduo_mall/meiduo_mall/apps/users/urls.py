@@ -19,6 +19,7 @@ urlpatterns = [
     path('user/', views.UserDetailView.as_view()),  # 用户个人信息视图
     path('email/', views.EmailView.as_view()),  # 保存邮箱接口
     path('emails/verification/', views.EmailVerifyView.as_view()),  # 激活邮箱视图
+    path('browse_histories/', views.UserHistoryView.as_view()),  # 用户浏览记录视图
 ]
 
 router = DefaultRouter()
