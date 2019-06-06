@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 import pickle
 import base64
-from .serializers import UserCartSerializer, CartSKUSerializer
+from .serializers import UserCartSerializer, CartSKUSerializer, CartdeleteSerializer, CartSelectedAllSerializer
 from . import constants
 from goods.models import SKU
 
@@ -124,4 +124,125 @@ class CartView(APIView):
             # print("正在写入cookie")
             response = Response(serializer.data, status=status.HTTP_201_CREATED)
             response.set_cookie('cart', base64.b64encode(pickle.dumps(cart_dict)).decode(), max_age=constants.CART_COOKIE_EXPIRES)
+            return response
+
+    def put(self, request):
+        """修改购物车的数据"""
+        # 获取请求的数据,并校验
+        serializer = UserCartSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sku_id = serializer.validated_data.get('sku_id')
+        count = serializer.validated_data.get('count')
+        selected = serializer.validated_data.get('selected')
+        # 判断用户是否登录
+        try:
+            user = request.user
+        except Exception as e:
+            user = None
+        if user is not None and user.is_authenticated:
+            # 用户已登录,修改redis中的数据
+            redis_conn = get_redis_connection('cart')
+            pl = redis_conn.pipeline()
+            # 使用hset直接覆盖redis中对应的记录
+            pl.hset('cart_%s' % user.id, sku_id, count)
+            if selected:
+                # 勾选
+                pl.sadd('cart_selected_%s' % user.id, sku_id)
+            else:
+                # 不勾选
+                # srem(name, *values): 从set中移除元素，如果元素不存在，直接忽略
+                pl.srem('cart_selected_%s' % user.id, sku_id)
+            pl.execute()
+            return Response(serializer.data)
+        else:
+            # 用户未登录,修改cookie中的数据
+            # 尝试获取cookie中购物车数据
+            cart_str = request.COOKIES.get('cart')
+            if cart_str:
+                cart_dict = pickle.loads(base64.b64decode(cart_str))
+            else:
+                cart_dict = {}
+            if sku_id in cart_dict:
+                cart_dict[sku_id] = {
+                    "count": count,
+                    "selected": selected
+                }
+            response = Response(serializer.data)
+            # 写入cookie
+            response.set_cookie('cart', base64.b64encode(pickle.dumps(cart_dict)).decode(), expires=constants.CART_COOKIE_EXPIRES)
+            return response
+
+    def delete(self, request):
+        """删除购物车记录"""
+        serializer = CartdeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        sku_id = serializer.validated_data.get('sku_id')
+        try:
+            user = request.user
+        except Exception as e:
+            user = None
+        if user is not None and user.is_authenticated:
+            # 用户已登录,从redis中删除
+            redis_conn = get_redis_connection('cart')
+            pl = redis_conn.pipeline()
+            # 从redis中删除sku_id的记录
+            pl.hdel('cart_%s' % user.id, sku_id)
+            # 从set中删除选中的商品
+            pl.srem('cart_selected_%s' % user.id, sku_id)
+            pl.execute()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            # 用户未登录,从cookie中删除
+            # 尝试从cookie中读取cart_str
+            cart_str = request.COOKIES.get('cart')
+            response = Response(status=status.HTTP_204_NO_CONTENT)
+            if cart_str:
+                cart_dict = pickle.loads(base64.b64decode(cart_str))
+                if sku_id in cart_dict:
+                    del cart_dict[sku_id]
+                    # 重新写入cookie
+                    response.set_cookie('cart', base64.b64encode(pickle.dumps(cart_dict)).decode(), expires=constants.CART_COOKIE_EXPIRES)
+
+            return response
+
+
+class CartSelectAllView(APIView):
+    """购物车全选视图"""
+    def perform_authentication(self, request):
+        """重写验证用户身份函数"""
+        # 前端不会判断用户是否登录,无论是否登录都会传递一个JWT token,传递错误的token的请求会被拒绝,为了不让请求被拒,这里不做任何处理
+        pass
+
+    def put(self, request):
+        serializer = CartSelectedAllSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        selected = serializer.validated_data['selected']
+        try:
+            user = request.user
+        except Exception:
+            user = None
+        if user is not None and user.is_authenticated:
+            # 用户已登录
+            redis_conn = get_redis_connection('cart')
+            # 存储商品id对应数量的hash不用变
+            # 获取hash中所有的keys => hkeys(name)[source]
+            sku_ids = redis_conn.hkeys('cart_%s' % user.id)
+            if selected:
+                # 全选,将所有商品id添加到set中
+                redis_conn.sadd('cart_selected_%s' % user.id, *sku_ids)
+            else:
+                # 全不选,将set中所有元素删除
+                redis_conn.srem('cart_seleted_%s' % user.id, *sku_ids)
+            return Response({"message": "OK"})
+        else:
+            # 用户未登录
+            response = Response({"message": "OK"})
+            # 尝试从cookie中获取cart_str
+            cart_str = request.COOKIES.get('cart')
+            if cart_str:
+                cart_dict = pickle.loads(base64.b64decode(cart_str))
+                for sku_id in cart_dict.keys():
+                    cart_dict[sku_id]['selected'] = selected
+                response.set_cookie('cart', base64.b64encode(pickle.dumps(cart_dict)).decode(), expires=constants.CART_COOKIE_EXPIRES)
+
             return response

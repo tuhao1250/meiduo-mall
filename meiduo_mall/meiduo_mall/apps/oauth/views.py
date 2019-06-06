@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_jwt.settings import api_settings
 
+from carts.utils import merge_cart_cookie_to_redis
 from .utils import OAuthQQ
 from .exceptions import QQAPIException
 from .models import OAuthQQUser
@@ -73,11 +74,14 @@ class OAuthQQUserView(GenericAPIView):
 
         payload = jwt_payload_handler(user)
         token = jwt_encode_handler(payload)
-        return Response({
+        response = Response({
             'token': token,
             'username': user.username,
             'user_id': user.id
         })
+        # 合并购物车
+        response = merge_cart_cookie_to_redis(request, response, user)
+        return response
 
     def post(self, request):
         """
@@ -96,11 +100,14 @@ class OAuthQQUserView(GenericAPIView):
 
         payload = jwt_payload_handler(user)
         token = jwt_encode_handler(payload)
-        return Response({
+        response = Response({
             'token': token,
             'username': user.username,
             'user_id': user.id
         })
+        # 合并购物车
+        response = merge_cart_cookie_to_redis(request, response, user)
+        return response
 
 
 

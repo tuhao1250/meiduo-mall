@@ -9,6 +9,7 @@ from django_redis import get_redis_connection
 import re
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework_jwt.views import ObtainJSONWebToken
 
 from .models import User, Address
 from goods.models import SKU
@@ -18,6 +19,7 @@ from verifications.serializers import CheckImageCodeSerializer
 from .utils import get_user_by_account
 from . import constants
 from goods.serializers import SKUSerializer
+from carts.utils import merge_cart_cookie_to_redis
 # Create your views here.
 
 
@@ -303,3 +305,21 @@ class UserHistoryView(CreateModelMixin, GenericAPIView):
         serializer = SKUSerializer(sku_list, many=True)
         return Response(serializer.data)
 
+
+class UserAuthorizeView(ObtainJSONWebToken):
+    """
+    重写用户登录的视图
+    因为用户登录是post方法,所以我们覆盖post方法
+    """
+    def post(self, request, *args, **kwargs):
+        # 调用父类的post方法
+        response = super().post(request, *args, **kwargs)
+        # 判断用户是否可以成功登录,如果登录成功,则获取user对象并执行购物车合并,否则不执行任何操作
+        # 获取序列化器
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            # 如果能够校验成功,则用户可以登录
+            user = serializer.validated_data.get('user')
+            response = merge_cart_cookie_to_redis(request, response, user)
+
+        return response

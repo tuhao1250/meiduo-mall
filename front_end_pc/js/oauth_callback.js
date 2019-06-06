@@ -30,6 +30,7 @@ var vm = new Vue({
         var code = this.get_query_string('code');
         axios.get(this.host + 'oauth/qq/user/?code=' + code, {
                 responseType: 'json',
+                withCredentials: true
             })
             .then(response => {
                 if (response.data.user_id){
@@ -168,6 +169,7 @@ var vm = new Vue({
                     "access_token": this.access_token
                 }, {
                     responseType: 'json',
+                    withCredentials: true
                 })
                     .then(response=>{
                         // 记住用户登录状态
