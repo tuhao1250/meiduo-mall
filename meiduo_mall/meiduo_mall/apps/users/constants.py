@@ -15,3 +15,6 @@ EMAIL_REGEX = r'^[a-z0-9][\w.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$'
 
 # 用户地址数量限制
 USER_ADDRESS_COUNTS_LIMIT = 20
+
+# 用户浏览历史记录最大保存条数
+USER_BROWSING_HISTORY_COUNTS_LIMIT = 5

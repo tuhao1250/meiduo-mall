@@ -1,20 +1,23 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import CreateAPIView, GenericAPIView, RetrieveAPIView, UpdateAPIView
+from rest_framework.generics import CreateAPIView, GenericAPIView, RetrieveAPIView, UpdateAPIView, ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import mixins
+from rest_framework.mixins import CreateModelMixin, ListModelMixin
+from django_redis import get_redis_connection
 import re
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 
 from .models import User, Address
+from goods.models import SKU
 from .serializers import CreateUserSerializer, CheckSMSCodeSerializer, ResetPasswordSerializer, \
-    UserDatailSerializer, EmailSerializer, AddressSerializer, AddressTitleSerializer
+    UserDatailSerializer, EmailSerializer, AddressSerializer, AddressTitleSerializer, AddUserHistorySerializer
 from verifications.serializers import CheckImageCodeSerializer
 from .utils import get_user_by_account
 from . import constants
+from goods.serializers import SKUSerializer
 # Create your views here.
 
 
@@ -134,11 +137,12 @@ class PasswordView(GenericAPIView):
 
 
 class UserDetailView(RetrieveAPIView):
-    """用户详情视图"""
+    """用户详情页视图"""
     queryset = User.objects.all()
     serializer_class = UserDatailSerializer
     # 补充只有通过认证才能访问接口的权限
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_object(self):
         """
@@ -205,7 +209,7 @@ class AddressViewSet(ModelViewSet):
     更新收货地址标题
     """
     permission_classes = [IsAuthenticated]
-
+    pagination_class = None
     def get_serializer_class(self):
         if self.action == "title":
             return AddressTitleSerializer
@@ -272,3 +276,30 @@ class AddressViewSet(ModelViewSet):
         # 保存
         serializer.save()
         return Response(serializer.data)
+
+
+class UserHistoryView(CreateModelMixin, GenericAPIView):
+    """用户历史浏览记录视图"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = AddUserHistorySerializer
+
+    def post(self, request):
+        """创建用户浏览记录"""
+        return self.create(request)
+
+    def get(self, request):
+        """获取用户浏览记录"""
+        user_id = request.user.id
+        history_key = "history_%s" % user_id
+        # 查询redis数据库
+        redis_conn = get_redis_connection('history')
+        sku_ids = redis_conn.lrange(history_key, 0, constants.USER_BROWSING_HISTORY_COUNTS_LIMIT)
+        # 根据redis返回的sku_id查询数据库
+        # SKU.objects.filter(id__in=sku_ids)  # 这样的结果顺序不对
+        sku_list = []
+        for sku_id in sku_ids:
+            sku_list.append(SKU.objects.get(id=sku_id))
+        # 调用序列化器进行序列化
+        serializer = SKUSerializer(sku_list, many=True)
+        return Response(serializer.data)
+

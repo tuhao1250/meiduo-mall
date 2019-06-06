@@ -23,4 +23,6 @@ urlpatterns = [
     path('', include('verifications.urls', namespace="verifications")),  # 包含验证码模块的urls
     path('', include('areas.urls', namespace="areas")),  # 包含areas模块的urls
     path('ckeditor/', include('ckeditor_uploader.urls')),  # 包含ckeditor的url
+    path('', include('goods.urls', namespace="goods")),  # 包含商品模块的urls
+    path('', include('carts.urls', namespace="carts")),  # 包含购物车模块的urls
 ]

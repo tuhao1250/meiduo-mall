@@ -13,17 +13,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='Area',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='名称', max_length=20, verbose_name='名称')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='subs', to='areas.Area', verbose_name='上级行政区划')),
-            ],
-            options={
-                'verbose_name': '行政区划',
-                'verbose_name_plural': '行政区划',
-                'db_table': 'tb_areas',
-            },
-        ),
+
     ]
