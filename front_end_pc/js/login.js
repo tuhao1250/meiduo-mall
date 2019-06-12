@@ -66,12 +66,14 @@ var vm = new Vue({
                         location.href = return_url;
                     })
                     .catch(error=>{
+                        // console.log("捕获到错误")
                         if (error.response.status === 400) {
                             this.error_pwd_message = '用户名或密码错误';
+
                         } else {
                             this.error_pwd_message = '服务器错误';
                         }
-                        this.error_pwd = true;
+                        this.error_password = true;
                     })
             }
         },
