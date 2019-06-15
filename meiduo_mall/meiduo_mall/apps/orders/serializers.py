@@ -154,3 +154,30 @@ class SaveOrderSerializer(serializers.ModelSerializer):
         pl.srem('cart_selected_%s' % user.id, *redis_selected)
         pl.execute()
         return order
+
+
+class GoodsSKUSerializer(serializers.ModelSerializer):
+    """商品SKU序列化器"""
+
+    class Meta:
+        model = SKU
+        fields = ['id', 'name', 'default_image_url', 'price']
+
+
+class OrderGoodsSerializer(serializers.ModelSerializer):
+    """订单商品序列化器"""
+    sku = GoodsSKUSerializer(read_only=True)
+
+    class Meta:
+        model = OrderGoods
+        fields = ['count', 'price', 'sku', 'is_commented']
+
+
+class OrderInfoSerializer(serializers.ModelSerializer):
+    """用户订单序列化器"""
+    skus = OrderGoodsSerializer(many=True, read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+
+    class Meta:
+        model = OrderInfo
+        fields = ['oid', 'create_time', 'total_amount', 'freight', 'pay_method', 'status', 'skus']

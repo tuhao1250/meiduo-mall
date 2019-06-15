@@ -2,11 +2,13 @@ from django.shortcuts import render
 from django_redis import get_redis_connection
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import OrderingFilter
 import decimal
+from .models import OrderInfo
 from goods.models import SKU
-from .serializers import OrderSettlementSerializer, SaveOrderSerializer
+from .serializers import OrderSettlementSerializer, SaveOrderSerializer, OrderInfoSerializer
 # Create your views here.
 
 
@@ -51,3 +53,18 @@ class SaveOrderView(CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SaveOrderSerializer
 
+
+class OrdersAllView(ListAPIView):
+    """用户全部订单视图"""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderInfoSerializer
+    # # 排序的支持需要使用OrderingFilter过滤器后端
+    # filter_backends = [OrderingFilter]
+    # # 指明排序的字段
+    # ordering_fields = ['create_time']
+
+    def get_queryset(self):
+        # 获取该用户所有订单
+        orders = OrderInfo.objects.filter(user=self.request.user).order_by("-create_time")
+        return orders

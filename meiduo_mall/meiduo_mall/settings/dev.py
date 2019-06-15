@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'contents.apps.ContentsConfig',  # 广告模块
     'carts.apps.CartsConfig',  # 购物车模块
     'orders.apps.OrdersConfig',  # 订单模块
+    'payment.apps.PaymentConfig',  # 支付模块
 ]
 
 MIDDLEWARE = [
@@ -328,3 +329,8 @@ HAYSTACK_CONNECTIONS = {
 
 # 当添加、修改、删除数据时，自动生成索引
 HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+
+# 支付宝支付配置
+ALIPAY_APPID = "2016092800619303"
+ALIPAY_URL = "https://openapi.alipaydev.com/gateway.do"
+ALIPAY_DEBUG = True
