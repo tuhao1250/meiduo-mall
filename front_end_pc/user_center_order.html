@@ -8,11 +8,11 @@
 	<script type="text/javascript" src="js/host.js"></script>
 	<script type="text/javascript" src="js/vue-2.5.16.js"></script>
 	<script type="text/javascript" src="js/axios-0.18.0.min.js"></script>
-	<script>
+	<script type="text/javascript">
 		var user_id = sessionStorage.user_id || localStorage.user_id;
 		var token = sessionStorage.token || localStorage.token;
 		if (!(user_id && token)) {
-			location.href = '/login.html?next=/user_center_info.html';
+			location.href = '/login.html?next=/user_center_order.html';
 		}
 	</script>
 </head>

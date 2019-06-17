@@ -15,9 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+import xadmin
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
+    path('xadmin/', xadmin.site.urls),  # 包含xadmin的urls
     path('oauth/', include('oauth.urls', namespace="oauth")),  # 包含oauth模块的urls
     path('', include('users.urls', namespace="users")),  # 包含用户模块urls
     path('', include('verifications.urls', namespace="verifications")),  # 包含验证码模块的urls

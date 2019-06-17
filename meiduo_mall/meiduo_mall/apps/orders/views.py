@@ -2,13 +2,16 @@ from django.shortcuts import render
 from django_redis import get_redis_connection
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import CreateAPIView, ListAPIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.filters import OrderingFilter
+from rest_framework.generics import CreateAPIView, ListAPIView, GenericAPIView
+from rest_framework import mixins
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 import decimal
-from .models import OrderInfo
+
+from goods.serializers import SKUSerializer
+from .models import OrderInfo, OrderGoods, SKUComments
 from goods.models import SKU
-from .serializers import OrderSettlementSerializer, SaveOrderSerializer, OrderInfoSerializer
+from .serializers import OrderSettlementSerializer, SaveOrderSerializer, OrderInfoSerializer, OrderGoodsSerializer,\
+    SKUCommentSerializer
 # Create your views here.
 
 
@@ -68,3 +71,65 @@ class OrdersAllView(ListAPIView):
         # 获取该用户所有订单
         orders = OrderInfo.objects.filter(user=self.request.user).order_by("-create_time")
         return orders
+
+
+class UncommentGoodsView(APIView):
+    """获取未评论商品视图"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, order_id):
+        # try:
+        #     oredr = OrderInfo.objects.get(oid=order_id)
+        # except OrderInfo.DoesNotExist:
+        #     return Response({"message": "订单编号不存在"}, status=status.HTTP_400_BAD_REQUEST)
+        orderGoods = OrderGoods.objects.filter(order_id=order_id, is_commented=False)
+        serializer = OrderGoodsSerializer(orderGoods, many=True)
+        return Response(serializer.data)
+
+
+class SKUCommentView(mixins.CreateModelMixin, GenericAPIView):
+    """
+    商品评论视图
+    """
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    # # 排序的支持需要使用OrderingFilter过滤器后端
+    # filter_backends = [OrderingFilter]
+    # # 指明排序的字段
+    # ordering_fields = ['create_time', 'total_comments']
+
+    # def get_queryset(self):
+    #     if self.action == 'listbysku':
+    #         # 如果按照sku筛选
+    #         sku_id = self.request.data['sku']
+    #         # 默认按照创建日期倒序排序
+    #         return SKUComments.objects.filter(sku_id=sku_id).order_by('-create_time')
+    #     else:
+    #         sku_id = self.request.data['sku']
+    #         # 这样写太麻烦
+    #         return
+
+    def get_serializer_class(self):
+        return SKUCommentSerializer
+
+    def post(self, request, sku_id):
+        """添加评论"""
+        return self.create(request, sku_id)
+
+    def get(self, request, sku_id):
+        # 支持按照两种方式查询,默认按照spu筛选出所有相关的评论,
+        # 获取是否勾选了只显示当前商品的评论
+        sku = SKU.objects.get(id=sku_id)
+        if not sku:
+            return Response({'message': "商品不存在"})
+        show_sku = request.query_params.get('show_sku')
+        # 默认按照spu来筛选
+        comments = SKUComments.objects.filter(sku=sku) if show_sku else SKUComments.objects.filter(goods=sku.goods)
+        serialzier = self.get_serializer(comments, many=True)
+        return Response(serialzier.data)
+
+
+
+
+
+

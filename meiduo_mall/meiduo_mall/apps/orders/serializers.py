@@ -7,8 +7,9 @@ from django.db import transaction
 import decimal
 import time
 import logging
-from . models import OrderInfo, OrderGoods
 
+from orders import constants
+from .models import OrderInfo, OrderGoods, SKUComments
 
 logger = logging.getLogger('django')
 
@@ -118,7 +119,7 @@ class SaveOrderSerializer(serializers.ModelSerializer):
                         # 判断受影响的行数是否等于0就知道是否有执行过更新操作
                         # print("ret=%d" % ret)
                         if ret == 0:
-                            # 为更新成功,说明有人抢先下单了
+                            # 没有更新成功,说明有人抢先下单了
                             continue
                         # sku.save()  为什么加上这句话导致每次下了订单库存量没有变化了呢?
 
@@ -139,8 +140,9 @@ class SaveOrderSerializer(serializers.ModelSerializer):
                 order.save()
                 # 整体提交事务
                 transaction.savepoint_commit(save_order_info)
-            except ValidationError:
-                # 由于出现这个遗产的时候已经做了回滚,这里不能再回滚了
+            except ValidationError as e:
+                # 由于出现这个异常的时候已经做了回滚,这里不能再回滚了
+                logger.error(e)
                 raise
             except Exception as e:
                 logger.error(e)
@@ -181,3 +183,99 @@ class OrderInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderInfo
         fields = ['oid', 'create_time', 'total_amount', 'freight', 'pay_method', 'status', 'skus']
+
+
+class SKUCommentSerializer(serializers.ModelSerializer):
+    """SKU商品评论序列化器"""
+    username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SKUComments
+        fields = ['user', 'sku', 'comment', 'score', 'is_anonymous', 'total_likes', 'total_comments', 'order', 'username']
+        read_only_fields = ['total_likes', 'total_comments', 'username']
+        extra_kwargs = {
+            'comment': {
+                'required': True,
+                'min_length': 5,
+                'max_length': 200,
+                'error_messages': {
+                    'min_length': '最少输入5个字的评论',
+                    'max_length': '最多只能输入200个字的评论'
+                }
+            },
+            'score': {
+                'required': True
+            },
+            'user': {
+                'required': False
+            }
+        }
+
+    def get_username(self, obj):
+        """
+        序列化时获取用户名
+        :param obj: 当前model对应的模型类的实例
+        :return: username
+        """
+        username = obj.user.username if not obj.is_anonymous else constants.ANONYMOUS_USER_NAME
+        return username
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        attrs['user'] = user
+        # is_anonymous = attrs['is_anonymous']
+        # if is_anonymous:
+        #     # 如果是匿名评论
+        #     attrs['username'] = constants.ANONYMOUS_USER_NAME
+        # else:
+        #     # 不是匿名评论,则显示真实用户名
+        #     user = attrs['user']
+        #     attrs['username'] = user.username
+        sku = attrs['sku']
+        # 补充goods属性
+        attrs['goods'] = sku.goods
+        order = attrs['order']
+        if order.status != OrderInfo.ORDER_STATUS_ENUM['UNCOMMENT']:
+            # 如果订单不是未评价状态
+            raise ValidationError("订单不是待评价状态")
+        return attrs
+
+    def create(self, validated_data):
+        # 创建评论时需要删除掉不相关的username字段
+        # del validated_data['username']
+        # 需要添加多个表的记录,开启事物
+        with transaction.atomic():
+            # 创建保存点
+            save_point = transaction.savepoint()
+            try:
+                # 添加评论记录
+                comment = SKUComments.objects.create(**validated_data)
+                # print(comment)  # comment是一个SKUComment的对象
+                # 更新sku商品的comment字段
+                sku = validated_data['sku']
+                sku.comments += 1
+                sku.save()
+                # 增加spu的评论量
+                sku.goods.comments += 1
+                sku.goods.save()
+                # 更新orderGoods表的对应sku的是否完成评论
+                order = validated_data['order']
+                OrderGoods.objects.filter(order=order, sku=sku).update(is_commented=True)
+                # 判断本次订单的所有商品是否都已经评论完成
+                ordersgoods = OrderGoods.objects.filter(order=order)
+                for item in ordersgoods:
+                    if not item.is_commented:
+                        # 如果还有某个订单商品没有评论完成,则可以直接提交事物
+                        transaction.savepoint_commit(save_point)
+                        return comment
+                # 如果订单所有商品都已经评价完成,则更新订单状态为已完成
+                order.status = OrderInfo.ORDER_STATUS_ENUM['FINISHED']
+                order.save()
+                transaction.savepoint_commit(save_point)
+                return comment
+            except Exception as e:
+                # 回滚
+                transaction.savepoint_rollback(save_point)
+                # 写入日志
+                logger.error(e)
+                raise
