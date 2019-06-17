@@ -77,9 +77,9 @@ class SKUComments(BaseModel):
         (4, '80分'),
         (5, '100分'),
     )
-
+    order = models.ForeignKey(OrderInfo, on_delete=models.PROTECT, related_name="allcomments", verbose_name="关联订单编号", default="")
     sku = models.ForeignKey(SKU, on_delete=models.PROTECT, related_name="skucomments", verbose_name="商品SKU")
-    goods = models.ForeignKey(Goods, on_delete=models.PROTECT, related_name="goodscomments", verbose_name="商品SPU")
+    goods = models.ForeignKey(Goods, on_delete=models.PROTECT, related_name="spucomments", verbose_name="商品spu", default=1)
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="评价用户")
     comment = models.TextField(default="", verbose_name="评价内容")
     score = models.SmallIntegerField(choices=SCORE_CHOICES, default=5, verbose_name="满意度评分")

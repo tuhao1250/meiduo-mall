@@ -242,7 +242,15 @@ var vm = new Vue({
         }
     },
     mounted: function(){
-        this.get_orders();
+        // 判断用户是否登录
+        if (!(this.user_id && this.token)) {
+            console.log("身份已过期")
+			location.href = '/login.html?next=/user_center_order.html';
+        }
+        else {
+            // console.log("欢迎");
+            this.get_orders();
+        }
     },
     methods: {
         // 退出
@@ -288,6 +296,7 @@ var vm = new Vue({
                 })
                 .catch(error => {
                     console.log(error.response.data);
+                    alert(error.response.data.detail);
                 })
         },
         // 订单操作
@@ -311,7 +320,7 @@ var vm = new Vue({
             }
             // 去评价
             else if (order.status === 4) {
-                location.href = '/goods_judge.html?order_id=' + order.order_id;
+                location.href = '/goods_judge.html?order_id=' + order.oid;
             }
         }
     }
